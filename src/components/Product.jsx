@@ -2,34 +2,47 @@ import { useEffect, useState } from "react";
 
 import productapi from "apis/product";
 import { Spinner } from "neetoui";
-import { append, isNotNil } from "ramda";
 
 import Carousel from "./Carousel";
 
-// import { IMAGE_URLS } from "./constants";
-
 const Product = () => {
-  const [product, setProduct] = useState({});
+  const [product, setProduct] = useState({
+    name: "",
+    description: "",
+    mrp: 0,
+    offerPrice: 0,
+    imageUrls: [],
+    imageUrl: "",
+  });
   const [isLoading, setIsLoading] = useState(true);
+
   const fetchProducts = async () => {
     try {
       const res = await productapi.show();
-      setProduct(res.data);
-      console.log("Api Response", res);
+      console.log("API Response:", res);
+
+      // Always fallback to a safe object
+      setProduct(
+        res?.data || {
+          name: "",
+          description: "",
+          mrp: 0,
+          offerPrice: 0,
+          imageUrls: [],
+          imageUrl: "",
+        }
+      );
     } catch (error) {
-      console.log("An error occured", error);
+      console.log("An error occurred:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const { name, description, mrp, offer_price, image_url, image_urls } =
-    product;
-  const totalDiscounts = mrp - offer_price;
-  const discountPercentage = ((totalDiscounts / mrp) * 100).toFixed(1);
   useEffect(() => {
     fetchProducts();
   }, []);
+
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -37,6 +50,18 @@ const Product = () => {
       </div>
     );
   }
+
+  // Safe destructuring
+  const { name, description, mrp, offerPrice, imageUrls, imageUrl } =
+    product || {};
+
+  // Safe discount calculation
+  const totalDiscounts = mrp && offerPrice ? mrp - offerPrice : 0;
+  const discountPercentage =
+    mrp > 0 ? ((totalDiscounts / mrp) * 100).toFixed(1) : 0;
+
+  // Safe image handling
+  const images = imageUrls?.length > 0 ? [imageUrl, ...imageUrls] : [imageUrl];
 
   return (
     <div className="px-6 pb-6">
@@ -46,16 +71,20 @@ const Product = () => {
       </div>
       <div className="mt-6 flex gap-4">
         <div className="w-2/5">
-          {isNotNil(image_urls) ? (
-            <Carousel imageUrls={append(image_url, image_urls)} title={name} />
+          {images?.length > 1 ? (
+            <Carousel imageUrls={images} title={name} />
           ) : (
-            <img alt={name} className="w-48" src={image_url} />
+            <img
+              alt={name}
+              className="w-48"
+              src={imageUrl || "/assets/default-product.png"}
+            />
           )}
         </div>
         <div className="w-3/5 space-y-4">
           <p>{description}</p>
           <p>MRP: {mrp}</p>
-          <p className="font-semibold">Offer price: {offer_price}</p>
+          <p className="font-semibold">Offer price: {offerPrice}</p>
           <p className="font-semibold text-green-600">
             {discountPercentage}% off
           </p>
