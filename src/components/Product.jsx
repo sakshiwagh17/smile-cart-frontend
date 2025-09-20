@@ -23,7 +23,7 @@ const Product = () => {
 
       // Always fallback to a safe object
       setProduct(
-        res?.data || {
+        res || {
           name: "",
           description: "",
           mrp: 0,
