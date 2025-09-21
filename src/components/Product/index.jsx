@@ -1,47 +1,38 @@
 import { useEffect, useState } from "react";
 
 import productapi from "apis/product";
+import { LeftArrow } from "neetoicons";
 import { Spinner } from "neetoui";
+import { append, isNotNil } from "ramda";
+import { useParams, useHistory } from "react-router-dom";
 
 import Carousel from "./Carousel";
 
+import PageNotFound from "../commons/PageNotFound";
+
 const Product = () => {
-  const [product, setProduct] = useState({
-    name: "",
-    description: "",
-    mrp: 0,
-    offerPrice: 0,
-    imageUrls: [],
-    imageUrl: "",
-  });
+  const { slug } = useParams();
+  const history = useHistory();
+  const [product, setProduct] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const fetchProducts = async () => {
+  const [isError, setIsError] = useState(false);
+  const fetchProduct = async () => {
     try {
-      const res = await productapi.show();
-      console.log("API Response:", res);
-
-      // Always fallback to a safe object
-      setProduct(
-        res || {
-          name: "",
-          description: "",
-          mrp: 0,
-          offerPrice: 0,
-          imageUrls: [],
-          imageUrl: "",
-        }
-      );
+      const response = await productapi.show(slug);
+      setProduct(response);
     } catch (error) {
-      console.log("An error occurred:", error);
+      console.error("An error occurred:", error);
+      setIsError(true);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    fetchProduct();
+  });
+
+  if (isError) return <PageNotFound />;
 
   if (isLoading) {
     return (
@@ -51,28 +42,24 @@ const Product = () => {
     );
   }
 
-  // Safe destructuring
-  const { name, description, mrp, offerPrice, imageUrls, imageUrl } =
-    product || {};
-
-  // Safe discount calculation
-  const totalDiscounts = mrp && offerPrice ? mrp - offerPrice : 0;
-  const discountPercentage =
-    mrp > 0 ? ((totalDiscounts / mrp) * 100).toFixed(1) : 0;
-
-  // Safe image handling
-  const images = imageUrls?.length > 0 ? [imageUrl, ...imageUrls] : [imageUrl];
+  const { name, description, mrp, offerPrice, imageUrls, imageUrl } = product;
+  const totalDiscounts = mrp - offerPrice;
+  const discountPercentage = ((totalDiscounts / mrp) * 100).toFixed(1);
 
   return (
     <div className="px-6 pb-6">
-      <div>
+      <div className="flex items-center">
+        <LeftArrow
+          className="hover:neeto-ui-bg-gray-400 neeto-ui-rounded-full mr-6"
+          onClick={history.goBack}
+        />
         <p className="py-2 text-4xl font-semibold">{name}</p>
         <hr className="border-2 border-black" />
       </div>
       <div className="mt-6 flex gap-4">
         <div className="w-2/5">
-          {images?.length > 1 ? (
-            <Carousel imageUrls={images} title={name} />
+          {isNotNil(imageUrls) ? (
+            <Carousel imageUrls={append(imageUrl, imageUrls)} title={name} />
           ) : (
             <img
               alt={name}
