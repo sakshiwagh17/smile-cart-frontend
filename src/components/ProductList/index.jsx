@@ -2,22 +2,23 @@ import { useEffect, useState } from "react";
 
 import productapi from "apis/product";
 import { Header } from "components/commons";
-import { Spinner, Typography } from "neetoui";
+import { Search } from "neetoicons";
+import { Input, Spinner, Typography, NoData } from "neetoui";
+import { isEmpty } from "ramda";
 
 import ProductListItem from "./ProductListItem";
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchKey, setSearchKey] = useState("");
 
   const fetchProducts = async () => {
-    setIsLoading(true);
     try {
-      const { products } = await productapi.fetch();
-      console.log("API Response:", products);
-      setProducts(products);
+      const data = await productapi.fetch({ searchTerm: searchKey });
+      setProducts(data.products);
     } catch (error) {
-      console.error("An error occurred while fetching products", error);
+      console.log("error", error);
     } finally {
       setIsLoading(false);
     }
@@ -25,7 +26,7 @@ const ProductList = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  });
 
   if (isLoading) {
     return (
@@ -34,25 +35,40 @@ const ProductList = () => {
       </div>
     );
   }
-  <Header shouldShowBackButton={false} title="Smile Cart" />;
 
   return (
-    <>
-      <Header title={name} />
+    <div className="flex h-screen flex-col">
+      <Header
+        shouldShowBackButton={false}
+        title="Smile cart"
+        actionBlock={
+          <Input
+            placeholder="Search products"
+            prefix={<Search />}
+            type="search"
+            value={searchKey}
+            onChange={event => setSearchKey(event.target.value)}
+          />
+        }
+      />
       <div className="flex flex-col">
         <div className="m-2">
           <Typography className="mx-6 mb-2 mt-6" fontWeight="600" variant="h1">
-            Smile Cart
+            Products
           </Typography>
-          <hr className="neeto-ui-bg-black h-1" />
+          <hr className="border-t border-gray-300" />
         </div>
-        <div className="grid grid-cols-2 justify-items-center gap-y-8 p-4 md:grid-cols-3 lg:grid-cols-4">
-          {products.map(product => (
-            <ProductListItem key={product.slug} {...product} />
-          ))}
-        </div>
+        {isEmpty(products) ? (
+          <NoData className="h-full w-full" title="No products to show" />
+        ) : (
+          <div className="grid grid-cols-2 justify-items-center gap-y-8 p-4 md:grid-cols-3 lg:grid-cols-4">
+            {products.map(product => (
+              <ProductListItem key={product.slug} {...product} />
+            ))}
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
 };
 
