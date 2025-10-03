@@ -1,15 +1,15 @@
+import { useContext } from "react";
+
 import { LeftArrow } from "neetoicons";
 import { Typography } from "neetoui";
 import { AiOutlineShoppingCart } from "react-icons/ai";
 import { useHistory } from "react-router-dom";
+import CartItemsContext from "src/contexts/cartItemsContext";
 
-const Header = ({
-  title,
-  shouldShowBackButton = true,
-  actionBlock,
-  cartItemCount,
-}) => {
+const Header = ({ title, shouldShowBackButton = true, actionBlock }) => {
   const history = useHistory();
+  const [cartItems] = useContext(CartItemsContext);
+  const cartItemCount = cartItems.length;
 
   return (
     <div className="m-2">
